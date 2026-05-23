@@ -1,26 +1,58 @@
+const dns = require("node:dns");
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
+
+
+const express = require('express')
+const app = express()
+const cors = require('cors')
+const dotenv = require('dotenv')
+
+dotenv.config()
+app.use(cors())
+app.use(express.json())
+
 
 const { MongoClient, ServerApiVersion } = require('mongodb');
-const uri = "mongodb+srv://<db_username>:<db_password>@cluster0.hswyjly.mongodb.net/?appName=Cluster0";
+const port = process.env.PORT
+const uri = process.env.MONGO_URI;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
 const client = new MongoClient(uri, {
-  serverApi: {
-    version: ServerApiVersion.v1,
-    strict: true,
-    deprecationErrors: true,
-  }
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
+    }
 });
 
 async function run() {
-  try {
-    // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
-    // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log("Pinged your deployment. You successfully connected to MongoDB!");
-  } finally {
-    // Ensures that the client will close when you finish/error
-    await client.close();
-  }
+    try {
+        await client.connect();
+
+        const db = client.db('novis-server')
+        const collectionNorvis = db.collection('norvis')
+        
+        // ========== check connection ==========
+        app.get('/', (req, res) => {
+            res.send('server is running!')
+        })
+
+        //========== all posts get ==========
+        app.get('/posts', async (req, res) => {
+            const result = await collectionNorvis.find().toArray()
+            res.send(result)
+        })
+
+
+
+        app.listen(port, () => {
+            console.log(`Example app listening on port ${port}`)
+        })
+
+        await client.db("admin").command({ ping: 1 });
+        console.log("Pinged your deployment. You successfully connected to MongoDB!");
+    } finally {
+        // await client.close();
+    }
 }
 run().catch(console.dir);
